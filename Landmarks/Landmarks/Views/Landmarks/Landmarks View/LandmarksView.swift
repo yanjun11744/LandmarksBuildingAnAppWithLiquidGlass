@@ -30,25 +30,42 @@ struct LandmarksView: View {
 
                 // 遍历大陆，大陆为模型数据中的大陆
                 ForEach(ModelData.orderedContinents, id: \.self) { continent in
+                    // 当前搜索文本（去掉首尾空格）
+                    let searchText = modelData.searchString.trimmingCharacters(in: .whitespacesAndNewlines)
+                    // 是否处于搜索状态且有有效关键字
+                    let isFiltering = isSearching && !searchText.isEmpty
+                    
                     // 组，组用于将内容分组，组内的内容可以有相同的样式
                     Group {
-                        ContinentTitleView(title: continent.name)
                         // 如果存在地标列表，地标列表为模型数据中的地标列表 ，地标列表为大陆中的地标
                         if let landmarkList = modelData.landmarksByContinent[continent] {
-                            // 显示地标列表，地标列表为大陆中的地标
-                            LandmarkHorizontalListView(landmarkList: landmarkList)
-                                // 容器相对帧，容器相对帧用于将容器相对于其父容器进行布局
-                                .containerRelativeFrame(.vertical) { height, axis in
-                                    // 计算建议高度，建议高度为容器高度的百分比
-                                    let proposedHeight = height * Constants.landmarkListPercentOfHeight
-                                    // 如果建议高度大于最小高度，最小高度为常量
-                                    if proposedHeight > Constants.landmarkListMinimumHeight {
-                                        // 返回建议高度，建议高度为容器高度的百分比
-                                        return proposedHeight
+                            // 如果在搜索，则按名称过滤，否则使用完整列表
+                            let displayedLandmarks: [Landmark] = isFiltering
+                            ? landmarkList.filter { landmark in
+                                // LocalizedStringResource 先转成 String 再做不区分大小写匹配
+                                String(localized: landmark.name).localizedCaseInsensitiveContains(searchText)
+                            }
+                            : landmarkList
+                            
+                            // 只有在有可展示的地标时才显示标题和列表
+                            if !displayedLandmarks.isEmpty {
+                                ContinentTitleView(title: continent.name)
+                                
+                                // 显示地标列表，地标列表为大陆中的地标
+                                LandmarkHorizontalListView(landmarkList: displayedLandmarks)
+                                    // 容器相对帧，容器相对帧用于将容器相对于其父容器进行布局
+                                    .containerRelativeFrame(.vertical) { height, axis in
+                                        // 计算建议高度，建议高度为容器高度的百分比
+                                        let proposedHeight = height * Constants.landmarkListPercentOfHeight
+                                        // 如果建议高度大于最小高度，最小高度为常量
+                                        if proposedHeight > Constants.landmarkListMinimumHeight {
+                                            // 返回建议高度，建议高度为容器高度的百分比
+                                            return proposedHeight
+                                        }
+                                        // 返回最小高度，最小高度为常量
+                                        return Constants.landmarkListMinimumHeight
                                     }
-                                    // 返回最小高度，最小高度为常量                     
-                                    return Constants.landmarkListMinimumHeight
-                                }
+                            }
                         }
                     }
                 }
